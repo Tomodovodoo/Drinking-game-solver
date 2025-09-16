@@ -2,12 +2,11 @@ import random
 import matplotlib.pyplot as plt
 from collections import Counter
 
+
 def roll_fresh():
     """
     Perform a 'fresh' 2d6 roll.
     If (3,1) appears, discard and re-roll.
-    Returns a tuple (d1, d2) that is never (3,1).
-    (All outcomes except (3,1) are equally likely.)
     """
     while True:
         d1 = random.randint(1, 6)
@@ -18,9 +17,6 @@ def roll_fresh():
 def roll_locked():
     """
     Perform a 'locked' throw: one die is forced to be 3.
-    However, if the free die comes up 1 then we discard
-    and re-roll a fresh throw.
-    Returns the final (3, d_free) or a fresh outcome.
     """
     d_free = random.randint(1, 6)
     if d_free == 1:
@@ -29,21 +25,17 @@ def roll_locked():
         return (3, d_free)
 
 def is_double(d1, d2):
-    """Return True if the roll is a double (i.e. a hundred–result)."""
     return d1 == d2
 
 def is_snake_eyes(d1, d2):
-    """Return True if the roll is (1,1)."""
     return d1 == 1 and d2 == 1
 
 def contains_3(d1, d2):
-    """Return True if the outcome has at least one 3."""
     return 3 in (d1, d2)
 
 def shots_for_double(d1, d2):
     """
     For a double, return the face value (e.g., (4,4) gives 4).
-    (Note: For (1,1) this is 1.)
     """
     if d1 == d2:
         return d1
@@ -53,11 +45,6 @@ def simulate_initial_turn(candidate):
     """
     Simulate a single candidate's turn (3 throws with locked-dice rules)
     for the purpose of becoming HM.
-    Returns:
-      (becameHM, throw_number)
-    where becameHM is True if the candidate rolled (1,1) on one of his throws,
-    and throw_number is 1, 2, or 3 indicating on which throw HM was achieved.
-    If the candidate never rolls (1,1), returns (False, None).
     """
     # Throw 1 (always fresh)
     d1, d2 = roll_fresh()
@@ -88,7 +75,6 @@ def run_single_simulation(num_players=5):
     """
     Run one simulation:
       1. Cycle through candidate turns until one becomes HM by rolling (1,1)
-         on throw 1, 2, or 3. (No shot counts are tallied in this phase.)
       2. Once HM is established, start with the player immediately after HM.
          For each subsequent turn (3 throws per turn using locked rules):
            - If the current player is HM:
@@ -99,9 +85,8 @@ def run_single_simulation(num_players=5):
                        stops the simulation (and we do not add any shot for this roll);
                      • otherwise, add its face value to receivedShots.
          The simulation stops as soon as a non–HM throws (1,1).
-    Returns a tuple: (hm_id, receivedShots, givenShots)
     """
-    # --- Phase 1: Determine HM by cycling through candidate turns ---
+    # --- Phase 1: Determine HM ---
     candidate = 0
     hm_found = False
     hm_id = None
@@ -114,7 +99,7 @@ def run_single_simulation(num_players=5):
             break
         candidate = (candidate + 1) % num_players
 
-    # --- Phase 2: HM Tenure ---
+    # --- Phase 2: HM Torture ---
     receivedShots = 0
     givenShots = 0
     # Start with the player immediately after HM.
@@ -190,22 +175,18 @@ def run_monte_carlo_simulations(num_sims=5000, num_players=5):
     return hm_ids, received_list, given_list
 
 def main():
-    random.seed(42)  # For reproducibility.
+    random.seed(42)
     NUM_SIMS = 5000
     NUM_PLAYERS = 5
 
     hm_ids, rec_shots, giv_shots = run_monte_carlo_simulations(NUM_SIMS, NUM_PLAYERS)
     
-    # Print basic summary statistics.
     avg_received = sum(rec_shots) / len(rec_shots)
     avg_given = sum(giv_shots) / len(giv_shots)
     print("After {} simulations with {} players:".format(NUM_SIMS, NUM_PLAYERS))
     print("  Average receivedShots (from non-HM turns): {:.3f}".format(avg_received))
     print("  Average givenShots (from HM turns): {:.3f}".format(avg_given))
     
-    # (Optional) Plot the distributions.
-    import matplotlib.pyplot as plt
-    from collections import Counter
 
     rec_counts = Counter(rec_shots)
     giv_counts = Counter(giv_shots)
